@@ -63,24 +63,144 @@ namespace Laiterekisteri
             this.storageCapacity = storageCapacity;
         }
 
+        // MUUT METODIT
+
+        // Yliluokan metodit
+
+        public void ShowPurchaseInfo()
+        {
+            // Luetaan laitteen ostotiedot sen kentistä, huom! this
+            Console.WriteLine();
+            Console.WriteLine("Laitteen hankintatiedot");
+            Console.WriteLine("-----------------------");
+            Console.WriteLine("Laitteen nimi: " + this.name);
+            Console.WriteLine("Ostopäivä: " + this.purchaseDate);
+            Console.WriteLine("Hankinta: " + this.price);
+            Console.WriteLine("Takuu: " + this.warranty + " kk");
+        }
+
+        public void ShowBasicTechnicalInfo()
+        {
+            Console.WriteLine();
+            Console.WriteLine("Laitteen tekniset tiedot");
+            Console.WriteLine("------------------------");
+            Console.WriteLine("Koneen nimi: " + Name);
+            Console.WriteLine("Presessori: " + ProcessorType);
+            Console.WriteLine("Keskusmuisti: " + AmountRam);
+            Console.WriteLine("Levytila: " + StorageCapacity);
+        }
+
     }
 
     // Tietokondeiden luokka, perii ominaisuuksia ja metodeja laiteluokasta Device
+    class Computer : Device
+    {
+        // Konstruktorit
+        public Computer() : base()
+            { }
+
+        public Computer(string name) : base(name)
+            { }
+
+        // muut metodit seuraavaksi
+    }
+    
+    // Tablettien luokka, perii laiteluokan
+    class Tablet : Device 
+    {
+        // Kentät ja ominaisuudet
+        string operatingSystem;
+        public string OperatingSystem { get { return operatingSystem; } set { operatingSystem = value; } }
+        
+        bool stylusEnabled = false;
+        public bool StylusEnabled { get { return stylusEnabled; } set { stylusEnabled = value; } }
+        
+        // Konstruktorit
+
+        public Tablet() : base() { }
+
+        public Tablet(string name) : base(name) { }
+
+        // Tablet-luokan erikoismetodit
+        public void TabletInfo() 
+        {
+            Console.WriteLine();
+            Console.WriteLine("Tabletin erityistiedot");
+            Console.WriteLine("----------------------");
+            Console.WriteLine("Käyttöjärjestelmä: " +  OperatingSystem);
+            Console.WriteLine("Kynätuki: " + StylusEnabled);
+        }
+    }
 
 
     // Pääohjelman luokka, josta tulee Program.exe
     internal class Program
     {
+        // Ohjelman käynnistävä metodi
         static void Main(string[] args)
         {
-            // Ohjelman varsinaiset toiminnot tapahtuvat täällä.
-            // Ohjelma kysyy käyttäjältä tietoja laitteista ja vastaamalla kysymyksiin tiedot tallennetann muuttujiin.
+            // Ikuinen silmukka pääohjelman käynnissä pitämiseen
+            while (true) 
+            {
+                Console.WriteLine("Minkä laitteen tietot tallenetaan?");
+                Console.Write("1 tietokone, 2 tabletti ");
+                string type = Console.ReadLine();
 
-            // Luodaan uusi laite Device-luokasta
-            Device laite = new Device("Opintokone");
-            Console.WriteLine("Laitteen nimi on: " + laite.Name);
-            laite.PurchaseDate = "14.11.2023";
-            Console.WriteLine("Ostopäivä oli: " + laite.PurchaseDate);
+                // Luodaan Switch-Case-rakenne vaihtoehdoille
+
+                switch (type) 
+                {
+                    case "1":
+
+                        // Kysytään käyttäjiltä tietokoneen tiedot ja luodaan uusi tietokoneolio
+                        Console.Write("Nimi: ");
+                        string computerName = Console.ReadLine();
+                        Computer computer = new Computer(computerName);
+                        Console.Write("Ostopäivä: ");
+                        computer.PurchaseDate = Console.ReadLine();
+                        Console.Write("Hankintahinta: ");
+                        computer.Price = double.Parse(Console.ReadLine());
+                        Console.Write("Takuun kesto kuukausina: ");
+                        computer.Warranty = int.Parse(Console.ReadLine());
+                        Console.Write("Prosessorin tyyppi: ");
+                        computer.ProcessorType = Console.ReadLine();
+                        Console.Write("Keskusmuistin määrä (GB): ");
+                        computer.AmountRam = int.Parse(Console.ReadLine());
+                        Console.Write("Tallennuskapasiteetti (GB): ");
+                        computer.StorageCapacity = int.Parse(Console.ReadLine());
+
+                        // Näytetään olion tiedot metodien avulla
+                        computer.ShowPurchaseInfo();
+                        computer.ShowBasicTechnicalInfo();
+
+                        break;
+
+                    case "2":
+
+                        Console.Write("Nimi: ");
+                        string tabletName = Console.ReadLine();
+                        Tablet tablet = new Tablet(tabletName);
+
+                        break;
+
+
+                    default:
+                        Console.WriteLine("Virheellinen valinta, anna pelkkä numero");
+                        break;
+
+                }
+
+                // Ohjelman sulkeminen: poistutaan ikuisesta silmukasta
+                Console.WriteLine("Haluatko jatkaa K/e");
+                string continueAnswer = Console.ReadLine();
+                continueAnswer = continueAnswer.Trim();
+                continueAnswer = continueAnswer.ToLower();
+                if (continueAnswer == "e")
+                {
+                    break;
+                }
+            }
+           
 
             // Pidetään ikkuna auki, kunnes käyttäjä painaa <enter>
             Console.ReadLine();
