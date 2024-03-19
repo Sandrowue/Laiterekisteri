@@ -170,8 +170,12 @@ namespace Laiterekisteri
             // Määritellään binääridatan muodostaja serialisointia varten
             IFormatter formatter = new BinaryFormatter();
 
-            // Määritellään file stream tiedokoneiden tietojen tallenusta varten
+            // Määritellään file stream tiedokoneiden tietojen tallenusta varten -> huonompi ratkaisu
             Stream writeStream = new FileStream("ComputerData.dat",
+                FileMode.Create, FileAccess.Write);
+
+            // Määritellään toinen file stream pinotallennusta varten
+            Stream stackWriteStrem = new FileStream("ComputerStack.dat",
                 FileMode.Create, FileAccess.Write);
 
             // Luodaan vektorit ja laskurit niiden alkioille
@@ -301,13 +305,46 @@ namespace Laiterekisteri
                     Console.WriteLine("Tietokonevektorissa on " + computers.Length + " alkiota");
                     Console.WriteLine("Pinossa on nyt " + computerStack.Count + " tietokonetta");
 
-                    // Tallenetaan koneiden tiedot tiedostoon serialisoimalla
+                    // Tallenetaan koneiden tiedot vektorina tiedostoon serialisoimalla
                     formatter.Serialize(writeStream, computers);
                     writeStream.Close();
 
+                    // Tallennetaan koneiden tiedot pinomuodossa tiedostoon
+                    formatter.Serialize(stackWriteStrem, computerStack);
+                    stackWriteStrem.Close();
+
                     // Määritellään file stream tietokoneiden tietojen lukemista varten
-                    // Stream readStream = new FileStream("ComputerData.dat",
-                        // FileMode.Open, FileAccess.Read);
+                    Stream readStream = new FileStream("ComputerData.dat",
+                        FileMode.Open, FileAccess.Read);
+
+                    Computer[] savedComputers;
+
+                    savedComputers = (Computer[])formatter.Deserialize(readStream);
+
+                    readStream.Close();
+
+                    Stream readStackStream = new FileStream("ComputerStack.dat", FileMode.Open, FileAccess.Read);
+
+                    Stack<Computer> saveStack;
+                    saveStack = (Stack<Computer>)formatter.Deserialize(readStackStream);
+                    readStackStream.Close();
+
+                    // Tulostetaan ruudulle vekorina tallannetun ensimmäisen koneen nimi
+                    Console.WriteLine("Levylle on tallennettu " + savedComputers.Length + " koneen tiedot");
+                    Console.WriteLine(savedComputers[0].Name);
+                    savedComputers[0].CalculateWarrantyEndingDate();
+
+                    // Jos luotaan indeksi, jossa koneen tiedot puuttuvat (null) sovellus kaatuu -> vektorin käyttö ei ole järkevää
+
+                    // Pinoon tallenetaan vain todellisuudessa syötetyt koneet, voidaan lukea koko pino silmukassa
+
+                    foreach (var item in saveStack) 
+                    {
+                        Console.WriteLine("Koneen " + item.Name + " takuu päättyy");
+                        item.CalculateWarrantyEndingDate();
+                    }
+
+                   
 
                     break;
                 }
