@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+
+
 namespace Laiterekisteri
 {
     // Yleinen laiteluokka, yliluokka tietokoneille, tableteille ja puhelimille
+    [Serializable]
     class Device
     {
         // Luodaan kenttä (field) name, esitellään (define) ja annetaan arvo (set initial value)
@@ -90,9 +97,28 @@ namespace Laiterekisteri
             Console.WriteLine("Levytila: " + StorageCapacity);
         }
 
+        public void CalculateWarrantyEndingDate()
+        {
+            // Muutetaan päivämäärä merkkijono päivämäärä-kellonaika-muotoon
+            DateTime startDate = DateTime.ParseExact(this.PurchaseDate,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture);
+
+            // Lisätään takuun kesto
+            DateTime endDate = startDate.AddMonths(this.Warranty);
+
+            // Muunnetaan päivämäärä ISO-standardin mukaiseen muotoon
+            endDate = endDate.Date;
+
+            string isoDate = endDate.ToString("yyyy-MM-dd");
+
+            Console.WriteLine("Takuu päättyy: " + isoDate);
+        }
+
     }
 
     // Tietokondeiden luokka, perii ominaisuuksia ja metodeja laiteluokasta Device
+    [Serializable]
     class Computer : Device
     {
         // Konstruktorit
@@ -104,8 +130,9 @@ namespace Laiterekisteri
 
         // muut metodit seuraavaksi
     }
-    
+
     // Tablettien luokka, perii laiteluokan
+    [Serializable]
     class Tablet : Device 
     {
         // Kentät ja ominaisuudet
@@ -139,6 +166,23 @@ namespace Laiterekisteri
         // Ohjelman käynnistävä metodi
         static void Main(string[] args)
         {
+
+            // Määritellään binääridatan muodostaja serialisointia varten
+            IFormatter formatter = new BinaryFormatter();
+
+            // Määritellään file stream tiedokoneiden tietojen tallenusta varten
+            Stream writeStream = new FileStream("ComputerData.dat",
+                FileMode.Create, FileAccess.Write);
+
+            // Luodaan vektorit ja laskurit niiden alkioille
+            Computer[] computers = new Computer[10];
+            Tablet[] tablets = new Tablet[10];
+            int numberOfComputers = 0;
+            int numberOfTables = 0;
+
+            // Vaihtoehtoisesti luodaan pinot laitteille
+            Stack<Computer> computerStack = new Stack<Computer>();
+
             // Ikuinen silmukka pääohjelman käynnissä pitämiseen
             while (true) 
             {
@@ -156,31 +200,87 @@ namespace Laiterekisteri
                         Console.Write("Nimi: ");
                         string computerName = Console.ReadLine();
                         Computer computer = new Computer(computerName);
-                        Console.Write("Ostopäivä: ");
+                        Console.Write("Ostopäivä muodossa vvvv-kk-pp: ");
                         computer.PurchaseDate = Console.ReadLine();
                         Console.Write("Hankintahinta: ");
-                        computer.Price = double.Parse(Console.ReadLine());
+                        string price = Console.ReadLine();
+                        try
+                        {
+                            computer.Price = double.Parse(price);
+                        }
+                        catch (Exception ex) 
+                        {
+                            Console.WriteLine("Virheellinen hintatieto, käytä desimaalipilkkua (,) " + ex.Message);
+                            break;
+                        }
+
                         Console.Write("Takuun kesto kuukausina: ");
-                        computer.Warranty = int.Parse(Console.ReadLine());
+                        string warranty = Console.ReadLine();
+                        try
+                        {
+                            computer.Warranty = int.Parse(warranty);
+                        }
+                        catch (Exception ex) 
+                        {
+                            Console.WriteLine("Virheellinen takuutieto, vain kuukausien määrä kokonaislukuna " + ex.Message);
+                            break;
+                        }
+
                         Console.Write("Prosessorin tyyppi: ");
                         computer.ProcessorType = Console.ReadLine();
                         Console.Write("Keskusmuistin määrä (GB): ");
-                        computer.AmountRam = int.Parse(Console.ReadLine());
+                        string amountRam = Console.ReadLine();
+                        try
+                        {
+                            computer.AmountRam = int.Parse(amountRam);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Virheellinen muistin määrä, vain kokonaisluvut sallittu " + ex.Message);
+                            break;
+                        }
+
                         Console.Write("Tallennuskapasiteetti (GB): ");
-                        computer.StorageCapacity = int.Parse(Console.ReadLine());
+                        string storageCapacity = Console.ReadLine();
+                        try
+                        {
+                            computer.StorageCapacity = int.Parse(storageCapacity);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Virheellinen tallennustilan koko, vain kokonaisluvut sallittu" + ex.Message);
+                            break;
+                        }
+                    
 
                         // Näytetään olion tiedot metodien avulla
                         computer.ShowPurchaseInfo();
                         computer.ShowBasicTechnicalInfo();
+                        try
+                        {
+                            computer.CalculateWarrantyEndingDate();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Ostopäivä virheellinen " + ex.Message);
+                            break;
+                        }
+
+                        // Lisätään tietokone vektoriin
+                        computers[numberOfComputers] = computer;
+                        Console.WriteLine("Vektorin indeksi on nyt " + numberOfComputers);
+                        numberOfComputers++;
+                        Console.WriteLine("Nyt syötettiin " + numberOfComputers + ". kone");
+
+                        // Vaithoehtoisesti lisätään tietokone pinoon
+                        computerStack.Push(computer);
 
                         break;
 
                     case "2":
-
                         Console.Write("Nimi: ");
                         string tabletName = Console.ReadLine();
                         Tablet tablet = new Tablet(tabletName);
-
                         break;
 
 
@@ -197,6 +297,18 @@ namespace Laiterekisteri
                 continueAnswer = continueAnswer.ToLower();
                 if (continueAnswer == "e")
                 {
+                    // Vektorissa on se määrä alkioita, jotka sille on alustavasti annettu
+                    Console.WriteLine("Tietokonevektorissa on " + computers.Length + " alkiota");
+                    Console.WriteLine("Pinossa on nyt " + computerStack.Count + " tietokonetta");
+
+                    // Tallenetaan koneiden tiedot tiedostoon serialisoimalla
+                    formatter.Serialize(writeStream, computers);
+                    writeStream.Close();
+
+                    // Määritellään file stream tietokoneiden tietojen lukemista varten
+                    // Stream readStream = new FileStream("ComputerData.dat",
+                        // FileMode.Open, FileAccess.Read);
+
                     break;
                 }
             }
